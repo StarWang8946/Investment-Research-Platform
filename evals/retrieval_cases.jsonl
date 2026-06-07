@@ -1,0 +1,12 @@
+{"id":"maotai_channel_growth","query":"贵州茅台收入增长主要来自哪里？","company_code":"600519","top_k":5,"expected_keywords":["直营渠道","产品结构"],"description":"验证茅台样本文档中收入增长原因能被检索命中"}
+{"id":"maotai_cashflow_margin","query":"贵州茅台现金流和毛利率表现如何？","company_code":"600519","top_k":5,"expected_keywords":["现金流稳定","毛利率"],"description":"验证财务质量相关片段能被检索命中"}
+{"id":"baijiu_inventory_risk","query":"白酒行业需要关注什么风险？","top_k":5,"expected_keywords":["渠道库存","持续观察"],"description":"验证行业风险片段能被检索命中"}
+{"id":"maotai_direct_channel","query":"直营渠道扩张对贵州茅台有什么影响？","company_code":"600519","top_k":5,"expected_keywords":["直营渠道扩张","收入增长"],"description":"验证渠道关键词的同义问法能命中收入增长片段"}
+{"id":"maotai_product_mix","query":"产品结构优化是否推动公司增长？","company_code":"600519","top_k":5,"expected_keywords":["产品结构优化","收入增长"],"description":"验证产品结构相关问法能命中增长原因"}
+{"id":"maotai_financial_quality","query":"公司财务质量有哪些积极信号？","company_code":"600519","top_k":5,"expected_keywords":["现金流稳定","毛利率保持高位"],"description":"验证泛化财务质量问题能命中现金流和毛利率"}
+{"id":"baijiu_demand_resilience","query":"白酒行业需求表现怎么样？","top_k":5,"expected_keywords":["需求韧性较强"],"description":"验证行业需求判断能被检索命中"}
+{"id":"baijiu_channel_inventory","query":"渠道库存是否需要关注？","top_k":5,"expected_keywords":["渠道库存","持续观察"],"description":"验证库存风险问题能命中风险片段"}
+{"id":"maotai_summary_signal","query":"这份贵州茅台研报有哪些核心结论？","company_code":"600519","top_k":5,"expected_keywords":["直营渠道","现金流稳定","渠道库存"],"description":"验证摘要型问题能覆盖增长、财务和风险三类信息"}
+{"id":"maotai_margin_keyword","query":"毛利率保持高位说明什么？","company_code":"600519","top_k":5,"expected_keywords":["毛利率保持高位"],"description":"验证精确财务指标关键词命中"}
+{"id":"maotai_cashflow_keyword","query":"现金流稳定这一点在哪里提到？","company_code":"600519","top_k":5,"expected_keywords":["现金流稳定"],"description":"验证精确现金流关键词命中"}
+{"id":"maotai_company_filter","query":"收入增长来自直营渠道扩张吗？","company_code":"600519","top_k":3,"expected_keywords":["贵州茅台","直营渠道扩张"],"description":"验证带公司过滤时仍能命中公司相关片段"}
