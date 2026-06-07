@@ -1,10 +1,11 @@
 from time import perf_counter
+from collections.abc import Iterator
 
 from psycopg import Connection
 
 from app.core.exceptions import AppError
 from app.services.embeddings import embed_text, embedding_provider, vector_literal
-from app.services.llm import generate_answer
+from app.services.llm import generate_answer, generate_answer_stream
 from app.services.tasks import complete_task, create_qa_task, create_task_run, fail_task, get_task, start_task
 
 
@@ -186,7 +187,7 @@ def answer_question(
 ) -> dict:
     results = hybrid_search(conn, question, top_k, company_code)
     citations = save_citations(conn, results["items"], task_id=task_id, asset_id=asset_id)
-    answer, answer_provider = generate_answer(question, citations)
+    answer, answer_provider = generate_answer(question, citations, conn=conn)
     return {
         "question": question,
         "answer": answer,
@@ -194,3 +195,110 @@ def answer_question(
         "embedding_provider": results["embedding_provider"],
         "citations": citations,
     }
+
+
+def stream_answer_question(
+    conn: Connection,
+    question: str,
+    top_k: int = 5,
+    company_code: str | None = None,
+    task_id: str | None = None,
+    asset_id: str | None = None,
+    request_id: str | None = None,
+) -> dict:
+    if task_id:
+        task = get_task(conn, task_id)
+        if task["task_type"] != "qa":
+            raise AppError(4002, "task type mismatch for qa execution", 400)
+    else:
+        task = create_qa_task(conn, question, top_k, company_code, request_id=request_id)
+
+    task_id = str(task["id"])
+    started = perf_counter()
+    start_task(conn, task_id)
+    results = hybrid_search(conn, question, top_k, company_code)
+    citations = save_citations(conn, results["items"], task_id=task_id, asset_id=asset_id)
+    answer_stream, answer_provider = generate_answer_stream(question, citations, conn=conn)
+
+    return {
+        "question": question,
+        "answer_provider": answer_provider,
+        "embedding_provider": results["embedding_provider"],
+        "citations": citations,
+        "task_id": task_id,
+        "started": started,
+        "answer_stream": _finalize_qa_stream(
+            conn=conn,
+            answer_stream=answer_stream,
+            task_id=task_id,
+            question=question,
+            top_k=top_k,
+            company_code=company_code,
+            citations=citations,
+            answer_provider=answer_provider,
+            embedding_provider=results["embedding_provider"],
+            started=started,
+        ),
+    }
+
+
+def _finalize_qa_stream(
+    conn: Connection,
+    answer_stream: Iterator[str],
+    task_id: str,
+    question: str,
+    top_k: int,
+    company_code: str | None,
+    citations: list[dict],
+    answer_provider: str,
+    embedding_provider: str,
+    started: float,
+) -> Iterator[str]:
+    chunks: list[str] = []
+    try:
+        for chunk in answer_stream:
+            chunks.append(chunk)
+            yield chunk
+    except Exception as exc:
+        duration_ms = int((perf_counter() - started) * 1000)
+        fail_task(conn, task_id, str(exc))
+        create_task_run(
+            conn,
+            task_id,
+            run_type="qa",
+            run_name="qa.ask.stream",
+            input_payload={"question": question, "top_k": top_k, "company_code": company_code},
+            status="failed",
+            duration_ms=duration_ms,
+            error_message=str(exc),
+        )
+        raise
+
+    answer = "".join(chunks)
+    duration_ms = int((perf_counter() - started) * 1000)
+    run_output = {
+        "answer_provider": answer_provider,
+        "embedding_provider": embedding_provider,
+        "citations_count": len(citations),
+    }
+    create_task_run(
+        conn,
+        task_id,
+        run_type="qa",
+        run_name="qa.ask.stream",
+        input_payload={"question": question, "top_k": top_k, "company_code": company_code},
+        output_payload=run_output,
+        status="completed",
+        duration_ms=duration_ms,
+    )
+    complete_task(
+        conn,
+        task_id,
+        output_payload={
+            **run_output,
+            "question": question,
+            "answer": answer,
+            "citation_ids": [str(item["citation_id"]) for item in citations if item.get("citation_id")],
+        },
+        result_summary=answer[:1000],
+    )

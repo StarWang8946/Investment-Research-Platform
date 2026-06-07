@@ -64,6 +64,10 @@ def decide_route(payload: dict) -> RouteDecision:
         return RouteDecision("summary", "research_agent", "research.summary", "summary task")
     if task_type in {"conclusion", "research_conclusion"} or "研究结论" in text:
         return RouteDecision("conclusion", "research_agent", "research.conclusion", "research conclusion task")
+    if task_type in {"weekly_report", "weekly-report"} or "周报" in text:
+        return RouteDecision("weekly_report", "report_agent", "report.weekly", "weekly report task")
+    if task_type in {"investment_brief", "investment-brief"} or "投决材料" in text:
+        return RouteDecision("investment_brief", "report_agent", "report.investment_brief", "investment brief task")
     if task_type in {"daily_report", "daily-report", "report"} or "日报" in text:
         return RouteDecision("daily_report", "report_agent", "report.daily", "daily report task")
     if task_type in {"ingest", "document_ingest"} or "入库" in text:

@@ -231,9 +231,12 @@ def get_document(conn: Connection, document_id: str) -> dict:
     row = _fetch_one(
         conn,
         """
-        SELECT d.*, COUNT(dc.id) AS chunk_count
+        SELECT d.*, COUNT(dc.id) AS chunk_count,
+               COALESCE(array_remove(array_agg(DISTINCT t.tag_name), NULL), ARRAY[]::varchar[]) AS tag_names
         FROM documents d
         LEFT JOIN document_chunks dc ON dc.document_id = d.id
+        LEFT JOIN document_tags dt ON dt.document_id = d.id
+        LEFT JOIN tags t ON t.id = dt.tag_id
         WHERE d.id = %s AND d.deleted_at IS NULL
         GROUP BY d.id
         """,

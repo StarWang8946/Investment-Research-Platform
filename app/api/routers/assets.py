@@ -13,8 +13,18 @@ def create_asset(payload: dict, conn: Connection = Depends(get_conn)):
 
 
 @router.get("")
-def list_assets(asset_type: str | None = None, company_code: str | None = None, status: str | None = None, page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100), conn: Connection = Depends(get_conn)):
-    return assets.list_assets(conn, page, page_size, asset_type, company_code, status)
+def list_assets(
+    asset_type: str | None = None,
+    company_code: str | None = None,
+    status: str | None = None,
+    tag_id: str | None = None,
+    tag_code: str | None = None,
+    keyword: str | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    conn: Connection = Depends(get_conn),
+):
+    return assets.list_assets(conn, page, page_size, asset_type, company_code, status, tag_id=tag_id, tag_code=tag_code, keyword=keyword)
 
 
 @router.get("/{asset_id}")
@@ -30,6 +40,11 @@ def update_asset(asset_id: str, payload: dict, conn: Connection = Depends(get_co
 @router.get("/{asset_id}/revisions")
 def list_revisions(asset_id: str, conn: Connection = Depends(get_conn)):
     return assets.list_revisions(conn, asset_id)
+
+
+@router.get("/{asset_id}/sources")
+def list_sources(asset_id: str, conn: Connection = Depends(get_conn)):
+    return assets.list_asset_sources(conn, asset_id)
 
 
 @router.post("/{asset_id}/export")

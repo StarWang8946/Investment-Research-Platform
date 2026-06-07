@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     app_env: str = "local"
     database_url: str = "postgresql://localhost:5432/investment_research_mvp"
+    db_pool_min_size: int = 1
+    db_pool_max_size: int = 10
+    db_pool_timeout: float = 30.0
     upload_dir: Path = Path("data/uploads")
     export_dir: Path = Path("data/exports")
     llm_provider: str = "external"

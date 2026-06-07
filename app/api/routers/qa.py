@@ -9,6 +9,7 @@ from app.agents.base_agent import AgentContext
 from app.agents.registry import default_agent_registry
 from app.agents.supervisor import route_task
 from app.db.session import get_conn
+from app.services.search import stream_answer_question
 
 router = APIRouter(prefix="/qa", tags=["qa"])
 
@@ -26,6 +27,8 @@ class TopicRequest(BaseModel):
     question: str | None = Field(default=None, max_length=2000)
     top_k: int = Field(default=8, ge=1, le=20)
     company_code: str | None = Field(default=None, max_length=32)
+    template_key: str | None = Field(default=None, max_length=128)
+    export_format: str | None = Field(default=None, max_length=16)
 
 
 @router.post("/ask")
@@ -41,23 +44,41 @@ def ask(payload: AskRequest, request: Request, conn: Connection = Depends(get_co
 
 @router.post("/ask/stream")
 def ask_stream(payload: AskRequest, request: Request, conn: Connection = Depends(get_conn)):
-    result = default_agent_registry.get("research_agent").run(
+    result = stream_answer_question(
         conn,
-        AgentContext(
-            payload=payload.model_dump() | {"task_type": "qa"},
-            request_id=getattr(request.state, "request_id", None),
-        ),
-    )["result"]
+        payload.question,
+        top_k=payload.top_k,
+        company_code=payload.company_code,
+        task_id=payload.task_id,
+        asset_id=payload.asset_id,
+        request_id=getattr(request.state, "request_id", None),
+    )
 
     def events():
-        yield _sse("metadata", {"question": result["question"], "answer_provider": result["answer_provider"], "embedding_provider": result["embedding_provider"]})
+        yield _sse(
+            "metadata",
+            {
+                "question": result["question"],
+                "task_id": result["task_id"],
+                "answer_provider": result["answer_provider"],
+                "embedding_provider": result["embedding_provider"],
+            },
+        )
         for citation in result["citations"]:
             yield _sse("citation", citation)
-        for line in result["answer"].splitlines():
-            yield _sse("delta", {"text": line + "\n"})
-        yield _sse("done", {"citations_count": len(result["citations"])})
+        try:
+            for chunk in result["answer_stream"]:
+                yield _sse("delta", {"text": chunk})
+        except Exception as exc:
+            yield _sse("error", {"message": str(exc)})
+            return
+        yield _sse("done", {"task_id": result["task_id"], "citations_count": len(result["citations"])})
 
-    return StreamingResponse(events(), media_type="text/event-stream")
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.post("/memo")

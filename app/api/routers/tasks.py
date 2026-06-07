@@ -9,6 +9,9 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 @router.post("")
 def create_task(payload: dict, request: Request, conn: Connection = Depends(get_conn)):
+    execute = bool(payload.get("execute", True))
+    if execute:
+        return tasks.create_and_execute_task(conn, payload, getattr(request.state, "request_id", None))
     return tasks.create_task(conn, payload, getattr(request.state, "request_id", None))
 
 

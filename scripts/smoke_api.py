@@ -142,9 +142,13 @@ def main() -> None:
         )
     )
     assert company["company_code"] == code, company
+    companies = unwrap(client.get("/api/v1/companies", params={"market": "TEST", "keyword": code}))
+    assert any(item["company_code"] == code for item in companies["items"]), companies
 
     sample_paths = make_samples(Path("/private/tmp/investment_research_smoke"), run_id)
     document_ids = [upload_and_ingest(client, path) for path in sample_paths]
+    document_detail = unwrap(client.get(f"/api/v1/documents/{document_ids[0]}"))
+    assert document_detail["chunk_count"] >= 1, document_detail
 
     search = unwrap(client.post("/api/v1/search", json={"query": "直营渠道", "top_k": 5}))
     assert len(search["items"]) >= 1, search
@@ -163,17 +167,45 @@ def main() -> None:
     assert task_runs["items"][0]["status"] == "completed", task_runs
     assert_citations_saved(qa["task"]["id"], len(qa["citations"]))
 
-    task = unwrap(client.post("/api/v1/tasks", json={"task_type": "qa", "task_title": "Smoke QA", "input_text": "收入增长原因"}))
-    assert task["status"] == "pending", task
+    task_execution = unwrap(
+        client.post(
+            "/api/v1/tasks",
+            json={
+                "task_type": "qa",
+                "task_title": "Smoke QA",
+                "input_text": "贵州茅台收入增长原因是什么？",
+                "input_payload": {"question": "贵州茅台收入增长原因是什么？", "top_k": 3},
+            },
+        )
+    )
+    assert task_execution["task"]["status"] == "completed", task_execution
+    assert task_execution["decision"]["agent"] == "research_agent", task_execution
+    assert task_execution["result"]["task"]["status"] == "completed", task_execution
+    assert_citations_saved(task_execution["task"]["id"], len(task_execution["result"]["citations"]))
+
+    task_runs_from_tasks = unwrap(client.get(f"/api/v1/tasks/{task_execution['task']['id']}/runs"))
+    run_names = {item["run_name"] for item in task_runs_from_tasks["items"]}
+    assert "orchestrator_agent.route" in run_names, task_runs_from_tasks
+    assert "research_agent" in run_names, task_runs_from_tasks
+    task_list = unwrap(client.get("/api/v1/tasks", params={"task_type": "qa", "status": "completed"}))
+    assert any(item["id"] == task_execution["task"]["id"] for item in task_list["items"]), task_list
+
+    pending_task = unwrap(
+        client.post(
+            "/api/v1/tasks",
+            json={"task_type": "qa", "task_title": "Pending QA", "input_text": "收入增长原因", "execute": False},
+        )
+    )
+    assert pending_task["status"] == "pending", pending_task
     executed_task = unwrap(
         client.post(
             "/api/v1/qa/ask",
-            json={"question": "贵州茅台收入增长原因是什么？", "top_k": 3, "task_id": task["id"]},
+            json={"question": "贵州茅台收入增长原因是什么？", "top_k": 3, "task_id": pending_task["id"]},
         )
     )
-    assert executed_task["task"]["id"] == task["id"], executed_task
+    assert executed_task["task"]["id"] == pending_task["id"], executed_task
     assert executed_task["task"]["status"] == "completed", executed_task
-    assert_citations_saved(task["id"], len(executed_task["citations"]))
+    assert_citations_saved(pending_task["id"], len(executed_task["citations"]))
 
     routed = unwrap(
         client.post(
@@ -188,11 +220,41 @@ def main() -> None:
     assert memo["asset"]["asset_type"] == "memo", memo
     assert "##" in memo["content_markdown"], memo
     assert_asset_citations_saved(memo["asset"]["id"], len(memo["citations"]))
+    assert memo["asset"]["sources"], memo
+
+    memo_sources = unwrap(client.get(f"/api/v1/assets/{memo['asset']['id']}/sources"))
+    assert len(memo_sources["items"]) >= 1, memo_sources
+
+    tag = unwrap(
+        client.post(
+            "/api/v1/tags",
+            json={
+                "tag_code": f"smoke-tag-{run_id}",
+                "tag_name": f"Smoke Tag {run_id}",
+                "tag_type": "topic",
+            },
+        )
+    )
 
     daily = unwrap(client.post("/api/v1/qa/daily-report", json={"topic": "白酒行业今日重点", "top_k": 3}))
     assert daily["asset"]["asset_type"] == "daily_report", daily
-    assert "##" in daily["content_markdown"], daily
+    assert "## 市场概览" in daily["content_markdown"], daily
+    assert "## 公告跟踪" in daily["content_markdown"], daily
+    assert "## 新闻动态" in daily["content_markdown"], daily
+    assert "## 研究观点" in daily["content_markdown"], daily
     assert_asset_citations_saved(daily["asset"]["id"], len(daily["citations"]))
+
+    routed_daily = unwrap(
+        client.post(
+            "/api/v1/agents/route",
+            json={"task_type": "daily_report", "topic": "白酒行业今日重点", "top_k": 3, "export_format": "docx"},
+        )
+    )
+    assert routed_daily["decision"]["agent"] == "report_agent", routed_daily
+    assert routed_daily["result"]["report_type"] == "daily_report", routed_daily
+    assert routed_daily["result"]["export"]["format"] == "docx", routed_daily
+    assert routed_daily["result"]["export"]["file_name"].endswith(".docx"), routed_daily
+    assert Path(routed_daily["result"]["export"]["file_path"]).exists(), routed_daily
 
     asset = unwrap(
         client.post(
@@ -202,10 +264,37 @@ def main() -> None:
                 "title": "Smoke Memo",
                 "content_markdown": "# Smoke Memo\n\n收入增长来自直营渠道。",
                 "company_code": "600519",
+                "sources": [{"source_type": "document", "source_ref_id": document_ids[0], "source_id_text": "smoke-doc"}],
+                "tag_ids": [tag["id"]],
             },
         )
     )
+    assert asset["sources"], asset
+    assert len(asset["tags"]) == 1, asset
+    asset_list = unwrap(client.get("/api/v1/assets", params={"company_code": "600519", "tag_id": tag["id"], "keyword": "Smoke"}))
+    assert any(item["id"] == asset["id"] for item in asset_list["items"]), asset_list
+
+    updated_asset = unwrap(
+        client.put(
+            f"/api/v1/assets/{asset['id']}",
+            json={
+                "content_markdown": "# Smoke Memo\n\n收入增长来自直营渠道，且产品结构持续优化。",
+                "summary": "更新后的人工修订版本",
+                "change_note": "manual revision",
+                "sources": [{"source_type": "document", "source_ref_id": document_ids[1], "source_id_text": "smoke-doc-2"}],
+                "tag_ids": [tag["id"]],
+            },
+        )
+    )
+    assert updated_asset["version"] == 2, updated_asset
+    assert "产品结构持续优化" in updated_asset["content_markdown"], updated_asset
+
+    revisions = unwrap(client.get(f"/api/v1/assets/{asset['id']}/revisions"))
+    assert len(revisions["items"]) >= 2, revisions
     exported = unwrap(client.post(f"/api/v1/assets/{asset['id']}/export", json={"format": "markdown"}))
+    assert exported["file_name"].endswith(".md"), exported
+    assert exported["file_name"].startswith("memo_600519_"), exported
+    assert exported["download_path"] == exported["file_path"], exported
     assert Path(exported["file_path"]).exists(), exported
 
     print(
@@ -215,6 +304,7 @@ def main() -> None:
             "search_hits": len(search["items"]),
             "citations": len(qa["citations"]),
             "qa_task_id": qa["task"]["id"],
+            "task_api_task_id": task_execution["task"]["id"],
             "manual_task_id": executed_task["task"]["id"],
             "memo_asset_id": memo["asset"]["id"],
             "daily_asset_id": daily["asset"]["id"],

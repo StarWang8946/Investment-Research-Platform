@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
@@ -7,13 +8,27 @@ from app.core.config import get_settings
 from app.core.exceptions import AppError, app_error_handler, unhandled_error_handler
 from app.core.logger import setup_logging
 from app.core.middleware import ApiResponseMiddleware, RequestIdMiddleware
+from app.db.session import close_pool, get_pool, open_pool
 from app.services.embeddings import embedding_provider
+from app.services.prompts import seed_default_prompts
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    open_pool()
+    with get_pool().connection() as conn:
+        seed_default_prompts(conn)
+        conn.commit()
+    try:
+        yield
+    finally:
+        close_pool()
 
 
 def create_app() -> FastAPI:
     setup_logging()
     settings = get_settings()
-    app = FastAPI(title=settings.app_name, version=settings.app_version)
+    app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
     app.add_middleware(RequestIdMiddleware)
     app.add_middleware(ApiResponseMiddleware)
     app.add_exception_handler(AppError, app_error_handler)

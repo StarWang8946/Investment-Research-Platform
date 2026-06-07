@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from psycopg import Connection
 
-from app.services.reports import generate_daily_report, generate_memo, generate_research_conclusion, generate_summary
+from app.services.reports import (
+    generate_daily_report,
+    generate_investment_brief,
+    generate_memo,
+    generate_research_conclusion,
+    generate_summary,
+    generate_weekly_report,
+)
 from app.services.search import execute_qa_task, hybrid_search
 from app.skills.registry import Skill, default_registry
 
@@ -35,6 +42,7 @@ def memo_skill(conn: Connection, payload: dict) -> dict:
         payload["topic"],
         top_k=payload.get("top_k", 8),
         company_code=payload.get("company_code"),
+        template_key=payload.get("template_key"),
     )
 
 
@@ -44,6 +52,7 @@ def summary_skill(conn: Connection, payload: dict) -> dict:
         payload["topic"],
         top_k=payload.get("top_k", 8),
         company_code=payload.get("company_code"),
+        template_key=payload.get("template_key"),
     )
 
 
@@ -53,6 +62,7 @@ def conclusion_skill(conn: Connection, payload: dict) -> dict:
         payload["topic"],
         top_k=payload.get("top_k", 8),
         company_code=payload.get("company_code"),
+        template_key=payload.get("template_key"),
     )
 
 
@@ -62,6 +72,27 @@ def daily_report_skill(conn: Connection, payload: dict) -> dict:
         payload.get("topic") or "今日重点研究信息",
         top_k=payload.get("top_k", 8),
         company_code=payload.get("company_code"),
+        template_key=payload.get("template_key"),
+    )
+
+
+def weekly_report_skill(conn: Connection, payload: dict) -> dict:
+    return generate_weekly_report(
+        conn,
+        payload.get("topic") or "本周重点研究信息",
+        top_k=payload.get("top_k", 8),
+        company_code=payload.get("company_code"),
+        template_key=payload.get("template_key"),
+    )
+
+
+def investment_brief_skill(conn: Connection, payload: dict) -> dict:
+    return generate_investment_brief(
+        conn,
+        payload.get("topic") or "投决材料",
+        top_k=payload.get("top_k", 8),
+        company_code=payload.get("company_code"),
+        template_key=payload.get("template_key"),
     )
 
 
@@ -106,6 +137,20 @@ def register_research_skills() -> None:
             name="report.daily",
             description="Generate a structured daily research report and save it as a research asset.",
             handler=daily_report_skill,
+        )
+    )
+    default_registry.register(
+        Skill(
+            name="report.weekly",
+            description="Generate a structured weekly research report and save it as a research asset.",
+            handler=weekly_report_skill,
+        )
+    )
+    default_registry.register(
+        Skill(
+            name="report.investment_brief",
+            description="Generate a structured investment brief and save it as a research asset.",
+            handler=investment_brief_skill,
         )
     )
 
