@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>智能投研平台 — 高保真原型 v1.0</title>
+<style>
+:root {
+  --bg-page: #0f172a;
+  --bg-sidebar: #1e293b;
+  --bg-card: #1e293b;
+  --bg-card-hover: #334155;
+  --border: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --primary: #1e40af;
+  --primary-light: #3b82f6;
+  --primary-ghost: #1e3a5f;
+  --stock-up: #dc2626;
+  --stock-down: #059669;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font-sans); background: var(--bg-page); color: var(--text-primary); font-size: 14px; line-height: 1.6; min-width: 1280px; }
+
+/* Layout */
+.layout { display: flex; height: 100vh; overflow: hidden; }
+.sidebar { width: 240px; min-width: 240px; background: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; }
+.sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+.sidebar-logo h1 { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.sidebar-logo span { font-size: 11px; color: var(--text-muted); display: block; margin-top: 2px; }
+.sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+.nav-group { margin-bottom: 8px; }
+.nav-group-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 20px 4px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; border-left: 2px solid transparent; font-size: 13px; text-decoration: none; }
+.nav-item:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+.nav-item.active { background: var(--primary-ghost); color: var(--primary-light); border-left-color: var(--primary-light); }
+.nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+.nav-item .badge-dot { width: 6px; height: 6px; border-radius: 50%; margin-left: auto; }
+.nav-item.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+.sidebar-footer { padding: 12px 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted); }
+
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar { height: 52px; min-height: 52px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 16px; }
+.topbar-breadcrumb { font-size: 12px; color: var(--text-muted); }
+.topbar-breadcrumb span { color: var(--text-secondary); }
+.topbar-breadcrumb .sep { margin: 0 6px; }
+.topbar-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+.topbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.topbar-actions .time { font-size: 12px; color: var(--text-muted); }
+.content { flex: 1; overflow-y: auto; padding: 24px; }
+
+/* Components */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; font-family: inherit; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: #1e3a8a; }
+.btn-secondary { background: var(--bg-card-hover); color: var(--text-secondary); border: 1px solid var(--border); }
+.btn-secondary:hover { background: #475569; color: var(--text-primary); }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+.btn-danger { background: var(--error); color: #fff; }
+.btn-danger:hover { background: #dc2626; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-lg { padding: 10px 24px; font-size: 14px; }
+.btn svg { width: 16px; height: 16px; }
+
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px; }
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.card-title { font-size: 15px; font-weight: 600; }
+.card-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.badge-success { background: rgba(34,197,94,0.15); color: var(--success); }
+.badge-warning { background: rgba(245,158,11,0.15); color: var(--warning); }
+.badge-error { background: rgba(239,68,68,0.15); color: var(--error); }
+.badge-info { background: rgba(59,130,246,0.15); color: var(--info); }
+.badge-neutral { background: rgba(148,163,184,0.15); color: var(--text-secondary); }
+
+table { width: 100%; border-collapse: collapse; }
+thead th { text-align: left; padding: 10px 12px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 1px solid var(--border); background: var(--bg-page); position: sticky; top: 0; }
+tbody td { padding: 10px 12px; border-bottom: 1px solid rgba(51,65,85,0.5); font-size: 13px; }
+tbody tr:hover { background: rgba(59,130,246,0.04); }
+
+.input { width: 100%; padding: 8px 12px; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 13px; font-family: inherit; outline: none; transition: border 0.15s; }
+.input:focus { border-color: var(--primary-light); }
+.input::placeholder { color: var(--text-muted); }
+.select { appearance: none; padding-right: 32px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; cursor: pointer; }
+
+.pagination { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 16px; }
+.pagination .page-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); font-size: 13px; color: var(--text-secondary); cursor: pointer; border: 1px solid transparent; background: transparent; }
+.pagination .page-btn:hover { background: var(--bg-card-hover); }
+.pagination .page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.filter-bar .input, .filter-bar .select { width: auto; min-width: 140px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.gap-8 { gap: 8px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-20 { margin-bottom: 20px; }
+.mt-16 { margin-top: 16px; }
+
+/* Quick actions */
+.quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+.quick-action-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px; cursor: pointer; transition: all 0.15s; text-align: center; }
+.quick-action-card:hover { border-color: var(--primary-light); background: var(--bg-card-hover); }
+.quick-action-card .icon { font-size: 28px; margin-bottom: 8px; }
+.quick-action-card .label { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.quick-action-card .desc { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+/* Chat */
+.chat-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; height: calc(100vh - 130px); }
+.chat-main { display: flex; flex-direction: column; }
+.chat-messages { flex: 1; overflow-y: auto; padding-right: 8px; margin-bottom: 16px; }
+.chat-msg { margin-bottom: 20px; }
+.chat-msg.user { text-align: right; }
+.chat-msg.user .msg-bubble { background: var(--primary); color: #fff; display: inline-block; padding: 10px 16px; border-radius: 12px 12px 4px 12px; max-width: 80%; text-align: left; }
+.chat-msg.assistant .msg-bubble { background: var(--bg-card); border: 1px solid var(--border); padding: 12px 16px; border-radius: 12px 12px 12px 4px; max-width: 90%; }
+.chat-msg .msg-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+.chat-input-area { display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+.chat-input-area .input { flex: 1; padding: 10px 14px; font-size: 14px; }
+.chat-sidebar { display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+.chat-sidebar .side-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; }
+.chat-sidebar .side-section h4 { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
+.citation-item { padding: 8px 10px; background: var(--bg-page); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; font-size: 12px; border: 1px solid transparent; transition: all 0.15s; }
+.citation-item:hover { border-color: var(--primary-light); }
+.citation-item .cit-no { display: inline-block; width: 22px; height: 22px; line-height: 22px; text-align: center; background: var(--primary); color: #fff; border-radius: 4px; font-size: 11px; font-weight: 600; margin-right: 8px; }
+.citation-ref { color: var(--primary-light); font-weight: 600; cursor: pointer; }
+
+/* Typing animation */
+.typing-cursor::after { content: '▊'; animation: blink 1s infinite; color: var(--primary-light); }
+@keyframes blink { 0%,50% { opacity: 1; } 51%,100% { opacity: 0; } }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); width: 520px; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+.modal-header { padding: 20px 24px 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.modal-header h3 { font-size: 16px; font-weight: 600; }
+.modal-body { padding: 20px 24px; }
+.modal-footer { padding: 12px 24px 20px; display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Upload zone */
+.upload-zone { border: 2px dashed var(--border); border-radius: var(--radius-md); padding: 40px; text-align: center; cursor: pointer; transition: all 0.15s; margin-bottom: 16px; }
+.upload-zone:hover { border-color: var(--primary-light); background: rgba(59,130,246,0.05); }
+.upload-zone .upload-icon { font-size: 36px; margin-bottom: 8px; }
+.upload-zone .upload-text { font-size: 14px; color: var(--text-secondary); }
+.upload-zone .upload-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+/* Form */
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Detail layout */
+.detail-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.detail-section { margin-bottom: 16px; }
+.detail-section h4 { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
+.detail-item { display: flex; padding: 6px 0; font-size: 13px; }
+.detail-item .label { color: var(--text-muted); width: 80px; flex-shrink: 0; }
+.detail-item .value { color: var(--text-primary); }
+
+/* Tabs */
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.tab-btn { padding: 8px 16px; font-size: 13px; color: var(--text-muted); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; font-family: inherit; transition: all 0.15s; }
+.tab-btn:hover { color: var(--text-secondary); }
+.tab-btn.active { color: var(--primary-light); border-bottom-color: var(--primary-light); }
+
+/* Editor */
+.editor-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.editor-pane { border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+.editor-pane-header { padding: 8px 12px; background: var(--bg-page); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+.editor-textarea { width: 100%; min-height: 400px; padding: 16px; background: var(--bg-card); border: none; color: var(--text-primary); font-family: var(--font-mono); font-size: 13px; line-height: 1.8; resize: vertical; outline: none; }
+.editor-preview { padding: 16px; min-height: 400px; overflow-y: auto; font-size: 13px; line-height: 1.8; }
+.editor-preview h1, .editor-preview h2, .editor-preview h3 { color: var(--text-primary); margin: 12px 0 8px; }
+.editor-preview h1 { font-size: 20px; }
+.editor-preview h2 { font-size: 16px; }
+.editor-preview p { margin-bottom: 8px; color: var(--text-secondary); }
+
+/* Asset bottom bar */
+.asset-bottom { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 16px; }
+.asset-bottom-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; }
+.asset-bottom-card h4 { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
+
+/* Skeleton */
+.skeleton { background: linear-gradient(90deg, var(--bg-card-hover) 25%, var(--bg-card) 50%, var(--bg-card-hover) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius-sm); }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Tags */
+.tag { display: inline-flex; align-items: center; padding: 2px 8px; background: var(--primary-ghost); color: var(--primary-light); border-radius: 4px; font-size: 11px; margin-right: 4px; }
+
+/* Stats cards */
+.stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+.stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; }
+.stat-card .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+.stat-card .stat-value { font-size: 28px; font-weight: 700; font-family: var(--font-mono); margin: 4px 0; }
+.stat-card .stat-desc { font-size: 11px; color: var(--text-secondary); }
+
+/* Hidden page */
+.page { display: none; }
+.page.active { display: block; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Link */
+a { color: var(--primary-light); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Toast */
+.toast { position: fixed; top: 20px; right: 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); z-index: 200; font-size: 13px; display: flex; align-items: center; gap: 8px; animation: slideIn 0.3s ease; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>📊 智能投研平台</h1>
+      <span>v0.1.0 · 研究信息中台 MVP</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-title">📊 研究工作台</div>
+        <a class="nav-item active" data-page="dashboard" onclick="showPage('dashboard', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          轻量首页
+        </a>
+        <a class="nav-item" data-page="documents" onclick="showPage('documents', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+          文档管理
+        </a>
+        <a class="nav-item" data-page="qa" onclick="showPage('qa', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          智能问答
+        </a>
+        <a class="nav-item" data-page="tasks" onclick="showPage('tasks', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          任务中心
+          <span class="badge-dot" style="background:var(--warning)"></span>
+        </a>
+        <a class="nav-item" data-page="assets" onclick="showPage('assets', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          研究资产
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">📈 量化工作台</div>
+        <a class="nav-item disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>因子管理<span style="font-size:10px;color:var(--text-muted);margin-left:auto">二期</span></a>
+        <a class="nav-item disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>回测分析<span style="font-size:10px;color:var(--text-muted);margin-left:auto">二期</span></a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">💼 投资工作台</div>
+        <a class="nav-item disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>组合建议<span style="font-size:10px;color:var(--text-muted);margin-left:auto">三期</span></a>
+        <a class="nav-item disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>风险监控<span style="font-size:10px;color:var(--text-muted);margin-left:auto">三期</span></a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">⚙️ 系统</div>
+        <a class="nav-item" data-page="settings" onclick="showPage('settings', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          系统设置
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      本地环境 · PostgreSQL 16<br>
+      DeepSeek · bge-m3 (Ollama)
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-breadcrumb" id="breadcrumb">研究工作台<span class="sep">/</span><span>轻量首页</span></div>
+      <div class="topbar-actions">
+        <span class="time" id="currentTime">2026-06-08 09:32</span>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ==================== PAGE: Dashboard ==================== -->
+      <div class="page active" id="page-dashboard">
+        <h2 style="font-size:20px;font-weight:600;margin-bottom:24px">轻量首页</h2>
+
+        <div class="quick-actions">
+          <div class="quick-action-card" onclick="showPage('documents');openUploadModal()">
+            <div class="icon">📤</div>
+            <div class="label">上传文档</div>
+            <div class="desc">上传研报、公告、财报</div>
+          </div>
+          <div class="quick-action-card" onclick="showPage('qa')">
+            <div class="icon">💬</div>
+            <div class="label">智能问答</div>
+            <div class="desc">基于资料进行研究问答</div>
+          </div>
+          <div class="quick-action-card" onclick="showPage('assets')">
+            <div class="icon">📝</div>
+            <div class="label">生成备忘录</div>
+            <div class="desc">创建研究备忘录</div>
+          </div>
+          <div class="quick-action-card" onclick="showPage('assets')">
+            <div class="icon">📅</div>
+            <div class="label">生成日报</div>
+            <div class="desc">创建晨会日报</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div><div class="card-title">最近任务</div></div>
+              <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">查看全部 →</button>
+            </div>
+            <table>
+              <thead><tr><th>任务名称</th><th>类型</th><th>状态</th><th>时间</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>茅台公告要点总结</td>
+                  <td><span class="badge badge-info">问答</span></td>
+                  <td><span class="badge badge-success">已完成</span></td>
+                  <td style="color:var(--text-muted)">10:30</td>
+                </tr>
+                <tr>
+                  <td>白酒行业研究备忘录</td>
+                  <td><span class="badge badge-info">备忘录</span></td>
+                  <td><span class="badge badge-warning">运行中</span></td>
+                  <td style="color:var(--text-muted)">10:25</td>
+                </tr>
+                <tr>
+                  <td>文档批量入库 ×5</td>
+                  <td><span class="badge badge-neutral">入库</span></td>
+                  <td><span class="badge badge-error">失败</span></td>
+                  <td style="color:var(--text-muted)">09:00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div><div class="card-title">最近研究资产</div></div>
+              <button class="btn btn-ghost btn-sm" onclick="showPage('assets')">查看全部 →</button>
+            </div>
+            <table>
+              <thead><tr><th>标题</th><th>类型</th><th>状态</th><th>更新时间</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>茅台投资逻辑跟踪</td>
+                  <td><span class="badge badge-info">备忘录</span></td>
+                  <td><span class="badge badge-neutral">草稿</span></td>
+                  <td style="color:var(--text-muted)">06-07 16:30</td>
+                </tr>
+                <tr>
+                  <td>晨会日报 2026-06-07</td>
+                  <td><span class="badge badge-info">日报</span></td>
+                  <td><span class="badge badge-success">已发布</span></td>
+                  <td style="color:var(--text-muted)">06-07 09:15</td>
+                </tr>
+                <tr>
+                  <td>白酒行业专题研究</td>
+                  <td><span class="badge badge-info">备忘录</span></td>
+                  <td><span class="badge badge-neutral">草稿</span></td>
+                  <td style="color:var(--text-muted)">06-06 14:20</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="grid-2 mt-16">
+          <div class="card">
+            <div class="card-title mb-16">系统信息</div>
+            <div class="detail-item"><span class="label">应用版本</span><span class="value">0.1.0</span></div>
+            <div class="detail-item"><span class="label">运行环境</span><span class="value">local</span></div>
+            <div class="detail-item"><span class="label">LLM 提供商</span><span class="value">deepseek-chat</span></div>
+            <div class="detail-item"><span class="label">Embedding</span><span class="value">bge-m3 (Ollama 1024维)</span></div>
+          </div>
+          <div class="card">
+            <div class="card-title mb-16">数据概览</div>
+            <div class="stat-cards" style="grid-template-columns:1fr 1fr;">
+              <div class="stat-card"><div class="stat-label">文档总数</div><div class="stat-value" style="font-size:24px;">98</div><div class="stat-desc">97 已解析</div></div>
+              <div class="stat-card"><div class="stat-label">研究资产</div><div class="stat-value" style="font-size:24px;">64</div><div class="stat-desc">35 家公司</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: Documents ==================== -->
+      <div class="page" id="page-documents">
+        <div class="flex-between mb-20">
+          <h2 style="font-size:20px;font-weight:600">文档管理</h2>
+          <button class="btn btn-primary" onclick="openUploadModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            上传文档
+          </button>
+        </div>
+
+        <div class="filter-bar">
+          <select class="input select" style="min-width:120px"><option>全部类型</option><option>研报</option><option>公告</option><option>年报/财报</option><option>备忘录</option></select>
+          <select class="input select" style="min-width:140px"><option>全部公司</option><option>贵州茅台 600519</option><option>五粮液 000858</option></select>
+          <select class="input select" style="min-width:120px"><option>全部状态</option><option>已解析</option><option>处理中</option><option>待处理</option><option>失败</option></select>
+          <input type="date" class="input" style="min-width:140px" placeholder="开始日期">
+          <input type="date" class="input" style="min-width:140px" placeholder="结束日期">
+          <input type="text" class="input" style="min-width:200px;flex:1" placeholder="搜索文档标题...">
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden">
+          <table>
+            <thead><tr><th style="width:40px"></th><th>标题</th><th>类型</th><th>公司</th><th>状态</th><th>日期</th><th style="width:120px">操作</th></tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:center">📄</td>
+                <td>贵州茅台2025年年报</td>
+                <td><span class="badge badge-info">年报</span></td>
+                <td>600519 贵州茅台</td>
+                <td><span class="badge badge-success">已解析</span></td>
+                <td style="color:var(--text-muted)">2026-03-28</td>
+                <td>
+                  <button class="btn btn-ghost btn-sm" onclick="showPage('doc-detail')">查看</button>
+                  <button class="btn btn-ghost btn-sm" style="color:var(--error)">删除</button>
+                </td>
+              </tr>
+              <tr>
+                <td style="text-align:center">📊</td>
+                <td>中金公司-白酒行业2026展望</td>
+                <td><span class="badge badge-info">研报</span></td>
+                <td>行业研究</td>
+                <td><span class="badge badge-warning">处理中</span></td>
+                <td style="color:var(--text-muted)">2026-06-03</td>
+                <td><button class="btn btn-ghost btn-sm">查看</button></td>
+              </tr>
+              <tr>
+                <td style="text-align:center">📢</td>
+                <td>五粮液2026年Q1业绩预告</td>
+                <td><span class="badge badge-info">公告</span></td>
+                <td>000858 五粮液</td>
+                <td><span class="badge badge-error">解析失败</span></td>
+                <td style="color:var(--text-muted)">2026-06-02</td>
+                <td>
+                  <button class="btn btn-ghost btn-sm">重试</button>
+                  <button class="btn btn-ghost btn-sm" style="color:var(--error)">删除</button>
+                </td>
+              </tr>
+              <tr>
+                <td style="text-align:center">📄</td>
+                <td>中信证券-食品饮料行业周报</td>
+                <td><span class="badge badge-info">研报</span></td>
+                <td>食品饮料</td>
+                <td><span class="badge badge-success">已解析</span></td>
+                <td style="color:var(--text-muted)">2026-06-01</td>
+                <td><button class="btn btn-ghost btn-sm">查看</button></td>
+              </tr>
+              <tr>
+                <td style="text-align:center">📝</td>
+                <td>茅台渠道调研纪要</td>
+                <td><span class="badge badge-info">备忘录</span></td>
+                <td>600519 贵州茅台</td>
+                <td><span class="badge badge-success">已解析</span></td>
+                <td style="color:var(--text-muted)">2026-05-28</td>
+                <td><button class="btn btn-ghost btn-sm">查看</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <button class="page-btn">‹</button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+          <button class="page-btn">...</button>
+          <button class="page-btn">7</button>
+          <button class="page-btn">›</button>
+          <span style="font-size:12px;color:var(--text-muted);margin-left:8px">共 128 条</span>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: Document Detail ==================== -->
+      <div class="page" id="page-doc-detail">
+        <div class="flex-between mb-20">
+          <div style="display:flex;align-items:center;gap:12px">
+            <button class="btn btn-ghost btn-sm" onclick="showPage('documents')">← 返回</button>
+            <h2 style="font-size:20px;font-weight:600">贵州茅台2025年年报</h2>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm">重新入库</button>
+            <button class="btn btn-danger btn-sm">删除</button>
+          </div>
+        </div>
+
+        <div class="detail-layout">
+          <div class="card">
+            <div class="card-title mb-16">📋 基本信息</div>
+            <div class="detail-item"><span class="label">文档ID</span><span class="value" style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">8d8a3f5a-d91b-4e2c...</span></div>
+            <div class="detail-item"><span class="label">类型</span><span class="value"><span class="badge badge-info">financial_report</span></span></div>
+            <div class="detail-item"><span class="label">公司</span><span class="value">贵州茅台 600519</span></div>
+            <div class="detail-item"><span class="label">来源</span><span class="value">上交所</span></div>
+            <div class="detail-item"><span class="label">发布日期</span><span class="value">2026-03-28</span></div>
+            <div class="detail-item"><span class="label">解析状态</span><span class="value"><span class="badge badge-success">已解析</span></span></div>
+            <div class="detail-item"><span class="label">Chunks</span><span class="value" style="font-family:var(--font-mono)">156</span></div>
+            <div class="detail-item"><span class="label">文件大小</span><span class="value" style="font-family:var(--font-mono)">2.4 MB</span></div>
+            <div class="detail-item"><span class="label">上传时间</span><span class="value">2026-06-04 15:22</span></div>
+            <div style="margin-top:12px"><span class="label" style="display:block;margin-bottom:6px">标签</span><span class="tag">年报</span><span class="tag">白酒</span><span class="tag">财务数据</span><span style="color:var(--primary-light);font-size:12px;cursor:pointer">+ 添加</span></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header" style="padding:0 0 12px 0">
+              <div class="card-title">📄 内容预览</div>
+              <div class="tabs" style="margin:0;border:none">
+                <button class="tab-btn active" style="font-size:12px">Chunk 视图</button>
+                <button class="tab-btn" style="font-size:12px">原文预览</button>
+              </div>
+            </div>
+
+            <div style="max-height:400px;overflow-y:auto">
+              <div style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:8px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                  <span style="font-size:12px;font-weight:600;color:var(--primary-light)">Chunk #12</span>
+                  <span style="font-size:11px;color:var(--text-muted)">页码: 12 | 经营分析</span>
+                </div>
+                <p style="font-size:13px;color:var(--text-secondary);line-height:1.7">
+                  报告期内，公司实现营业总收入 1,505.60 亿元，同比增长 15.72%；实现归属于上市公司股东的净利润 747.34 亿元，同比增长 15.24%。其中，直销渠道实现收入 748.87 亿元，同比增长 23.15%，占总收入比重提升至 49.73%。
+                </p>
+              </div>
+
+              <div style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:8px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                  <span style="font-size:12px;font-weight:600;color:var(--primary-light)">Chunk #13</span>
+                  <span style="font-size:11px;color:var(--text-muted)">页码: 12 | 经营分析</span>
+                </div>
+                <p style="font-size:13px;color:var(--text-secondary);line-height:1.7">
+                  产品结构方面，茅台酒实现收入 1,265.89 亿元，同比增长 16.29%；系列酒实现收入 239.71 亿元，同比增长 12.85%。公司持续优化产品结构，推进"大单品"战略，茅台1935等次高端产品表现亮眼。
+                </p>
+              </div>
+
+              <div style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:8px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                  <span style="font-size:12px;font-weight:600;color:var(--primary-light)">Chunk #14</span>
+                  <span style="font-size:11px;color:var(--text-muted)">页码: 13 | 费用分析</span>
+                </div>
+                <p style="font-size:13px;color:var(--text-secondary);line-height:1.7">
+                  费用方面，销售费用率同比下降 0.8 个百分点至 3.2%，管理费用率同比下降 0.5 个百分点至 6.1%。公司在推进直营化的同时有效控制了费用增长，经营效率持续提升。
+                </p>
+              </div>
+            </div>
+
+            <div class="pagination" style="margin-top:12px">
+              <button class="page-btn">‹</button><button class="page-btn active">1</button><button class="page-btn">2</button><button class="page-btn">3</button><span style="font-size:12px;color:var(--text-muted);margin-left:8px">共 156 chunks</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: Smart QA ==================== -->
+      <div class="page" id="page-qa">
+        <h2 style="font-size:20px;font-weight:600;margin-bottom:20px">智能问答</h2>
+
+        <div class="chat-layout">
+          <div class="chat-main">
+            <div class="chat-messages" id="chatMessages">
+              <div class="chat-msg assistant">
+                <div class="msg-label">🤖 智能投研助手</div>
+                <div class="msg-bubble">
+                  你好！我是智能投研助手，可以帮你基于已有资料进行研究问答、生成备忘录等。请在下方输入你的问题。
+                </div>
+              </div>
+
+              <div class="chat-msg user">
+                <div class="msg-label">👤 研究员</div>
+                <div class="msg-bubble">总结一下茅台2025年经营亮点</div>
+              </div>
+
+              <div class="chat-msg assistant" id="qaResponse">
+                <div class="msg-label">🤖 智能投研助手</div>
+                <div class="msg-bubble">
+                  茅台2025年经营亮点主要包括：<br><br>
+                  1. <strong>直销渠道增长强劲</strong>：直销渠道实现收入748.87亿元，同比增长23.15%，占总收入比重提升至49.73%<span class="citation-ref">[1]</span>。<br><br>
+                  2. <strong>产品结构持续改善</strong>：茅台酒收入增长16.29%，系列酒增长12.85%，茅台1935等次高端产品表现亮眼<span class="citation-ref">[2]</span>。<br><br>
+                  3. <strong>费用率有效控制</strong>：销售费用率下降0.8个百分点至3.2%，管理费用率下降0.5个百分点至6.1%，经营效率持续提升<span class="citation-ref">[3]</span>。<br><br>
+                  <div style="margin-top:8px;display:flex;gap:8px">
+                    <span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:var(--primary);color:#fff;border-radius:4px;font-size:11px;font-weight:600">1</span>
+                    <span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:var(--primary);color:#fff;border-radius:4px;font-size:11px;font-weight:600">2</span>
+                    <span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:var(--primary);color:#fff;border-radius:4px;font-size:11px;font-weight:600">3</span>
+                    <span style="color:var(--text-muted);font-size:12px">📎 3 个引用</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chat-input-area">
+              <input type="text" class="input" placeholder="输入你的问题..." value="茅台2025年的风险因素有哪些？">
+              <button class="btn btn-primary" onclick="simulateQA()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                发送
+              </button>
+            </div>
+          </div>
+
+          <div class="chat-sidebar">
+            <div class="side-section">
+              <h4>🔍 检索上下文</h4>
+              <div class="form-group">
+                <label class="form-label">公司筛选</label>
+                <select class="input select"><option>全部公司</option><option selected>贵州茅台 600519</option><option>五粮液 000858</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">返回数量</label>
+                <select class="input select"><option>6</option><option>10</option><option>15</option></select>
+              </div>
+            </div>
+
+            <div class="side-section">
+              <h4>📎 引用来源</h4>
+              <div class="citation-item">
+                <span class="cit-no">1</span> 贵州茅台2025年年报<br>
+                <span style="color:var(--text-muted);font-size:11px">p.12 · 直销渠道收入</span>
+              </div>
+              <div class="citation-item">
+                <span class="cit-no">2</span> 中金公司-白酒行业展望<br>
+                <span style="color:var(--text-muted);font-size:11px">p.5 · 产品结构分析</span>
+              </div>
+              <div class="citation-item">
+                <span class="cit-no">3</span> 中信证券-食品饮料周报<br>
+                <span style="color:var(--text-muted);font-size:11px">p.8 · 费用率趋势</span>
+              </div>
+            </div>
+
+            <div class="side-section">
+              <h4>📋 任务信息</h4>
+              <div style="font-size:12px;color:var(--text-muted)">
+                <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Task ID</span><span style="font-family:var(--font-mono)">a111-xxxx</span></div>
+                <div style="display:flex;justify-content:space-between;padding:4px 0"><span>LLM</span><span>deepseek-chat</span></div>
+                <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Embedding</span><span>bge-m3 (1024维)</span></div>
+                <div style="display:flex;justify-content:space-between;padding:4px 0"><span>耗时</span><span style="font-family:var(--font-mono)">2.1s</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: Tasks ==================== -->
+      <div class="page" id="page-tasks">
+        <h2 style="font-size:20px;font-weight:600;margin-bottom:20px">任务中心</h2>
+
+        <div class="filter-bar">
+          <select class="input select" style="min-width:120px"><option>全部类型</option><option>问答</option><option>备忘录</option><option>日报</option><option>文档入库</option></select>
+          <select class="input select" style="min-width:120px"><option>全部状态</option><option>运行中</option><option>已完成</option><option>失败</option><option>待执行</option></select>
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden">
+          <table>
+            <thead><tr><th style="width:40px"></th><th>任务名称</th><th>类型</th><th>Agent</th><th>状态</th><th>耗时</th><th>创建时间</th><th style="width:80px">操作</th></tr></thead>
+            <tbody>
+              <tr>
+                <td style="text-align:center">✅</td>
+                <td>茅台公告要点总结</td>
+                <td><span class="badge badge-info">问答</span></td>
+                <td style="color:var(--text-secondary)">research_agent</td>
+                <td><span class="badge badge-success">已完成</span></td>
+                <td style="font-family:var(--font-mono);font-size:12px">2.1s</td>
+                <td style="color:var(--text-muted)">10:30:15</td>
+                <td><button class="btn btn-ghost btn-sm">详情</button></td>
+              </tr>
+              <tr>
+                <td style="text-align:center">⏳</td>
+                <td>白酒行业研究备忘录</td>
+                <td><span class="badge badge-info">备忘录</span></td>
+                <td style="color:var(--text-secondary)">research_agent</td>
+                <td><span class="badge badge-warning">运行中</span></td>
+                <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">-</td>
+                <td style="color:var(--text-muted)">10:25:00</td>
+                <td><button class="btn btn-ghost btn-sm">详情</button></td>
+              </tr>
+              <tr>
+                <td style="text-align:center">❌</td>
+                <td>文档批量入库 ×5</td>
+                <td><span class="badge badge-neutral">入库</span></td>
+                <td style="color:var(--text-muted)">-</td>
+                <td><span class="badge badge-error">失败</span></td>
+                <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">-</td>
+                <td style="color:var(--text-muted)">09:00:00</td>
+                <td><button class="btn btn-ghost btn-sm">重试</button></td>
+              </tr>
+              <tr>
+                <td style="text-align:center">✅</td>
+                <td>晨会日报 2026-06-07</td>
+                <td><span class="badge badge-info">日报</span></td>
+                <td style="color:var(--text-secondary)">reporting_agent</td>
+                <td><span class="badge badge-success">已完成</span></td>
+                <td style="font-family:var(--font-mono);font-size:12px">3.8s</td>
+                <td style="color:var(--text-muted)">昨天 08:30</td>
+                <td><button class="btn btn-ghost btn-sm">详情</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card mt-16">
+          <div class="card-title mb-16">任务 #task-001 执行记录</div>
+          <table>
+            <thead><tr><th>步骤</th><th>类型</th><th>名称</th><th>状态</th><th>耗时</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><span class="badge badge-info">agent</span></td><td>orchestrator_agent</td><td><span class="badge badge-success">完成</span></td><td style="font-family:var(--font-mono);font-size:12px">45ms</td></tr>
+              <tr><td>2</td><td><span class="badge badge-info">skill</span></td><td>hybrid_retrieval</td><td><span class="badge badge-success">完成</span></td><td style="font-family:var(--font-mono);font-size:12px">835ms</td></tr>
+              <tr><td>3</td><td><span class="badge badge-info">skill</span></td><td>llm_generation</td><td><span class="badge badge-success">完成</span></td><td style="font-family:var(--font-mono);font-size:12px">1,120ms</td></tr>
+              <tr><td>4</td><td><span class="badge badge-info">skill</span></td><td>citation_trace</td><td><span class="badge badge-success">完成</span></td><td style="font-family:var(--font-mono);font-size:12px">100ms</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: Assets ==================== -->
+      <div class="page" id="page-assets">
+        <div class="flex-between mb-20">
+          <h2 style="font-size:20px;font-weight:600">研究资产</h2>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" onclick="showPage('asset-edit')">📝 新建备忘录</button>
+            <button class="btn btn-secondary btn-sm">📅 新建日报</button>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <select class="input select" style="min-width:120px"><option>全部</option><option>备忘录</option><option>日报</option></select>
+          <select class="input select" style="min-width:140px"><option>全部公司</option><option>贵州茅台</option><option>五粮液</option></select>
+          <select class="input select" style="min-width:120px"><option>全部状态</option><option>草稿</option><option>已审阅</option><option>已发布</option></select>
+          <input type="text" class="input" style="min-width:200px;flex:1" placeholder="搜索资产标题...">
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden">
+          <table>
+            <thead><tr><th>标题</th><th>类型</th><th>公司</th><th>状态</th><th>版本</th><th>更新时间</th><th style="width:120px">操作</th></tr></thead>
+            <tbody>
+              <tr>
+                <td style="font-weight:500">茅台投资逻辑跟踪</td>
+                <td><span class="badge badge-info">备忘录</span></td>
+                <td>600519 贵州茅台</td>
+                <td><span class="badge badge-neutral">草稿</span></td>
+                <td style="font-family:var(--font-mono);font-size:12px">v2</td>
+                <td style="color:var(--text-muted)">06-07 16:30</td>
+                <td><button class="btn btn-ghost btn-sm" onclick="showPage('asset-edit')">编辑</button></td>
+              </tr>
+              <tr>
+                <td style="font-weight:500">晨会日报 2026-06-07</td>
+                <td><span class="badge badge-info">日报</span></td>
+                <td style="color:var(--text-muted)">-</td>
+                <td><span class="badge badge-success">已发布</span></td>
+                <td style="font-family:var(--font-mono);font-size:12px">v1</td>
+                <td style="color:var(--text-muted)">06-07 09:15</td>
+                <td><button class="btn btn-ghost btn-sm">查看</button></td>
+              </tr>
+              <tr>
+                <td style="font-weight:500">白酒行业专题研究</td>
+                <td><span class="badge badge-info">备忘录</span></td>
+                <td style="color:var(--text-muted)">行业</td>
+                <td><span class="badge badge-neutral">草稿</span></td>
+                <td style="font-family:var(--font-mono);font-size:12px">v1</td>
+                <td style="color:var(--text-muted)">06-06 14:20</td>
+                <td><button class="btn btn-ghost btn-sm">编辑</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: Asset Edit ==================== -->
+      <div class="page" id="page-asset-edit">
+        <div class="flex-between mb-16">
+          <div style="display:flex;align-items:center;gap:12px">
+            <button class="btn btn-ghost btn-sm" onclick="showPage('assets')">← 返回</button>
+            <h2 style="font-size:20px;font-weight:600">茅台投资逻辑跟踪</h2>
+            <span class="badge badge-neutral">草稿</span>
+            <span style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono)">v2</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm">保存草稿</button>
+            <button class="btn btn-primary btn-sm">发布</button>
+            <button class="btn btn-secondary btn-sm">导出 DOCX</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">标题</label>
+          <input type="text" class="input" value="茅台投资逻辑跟踪（修订）" style="font-size:15px;font-weight:500">
+        </div>
+
+        <div class="editor-layout mb-16">
+          <div class="editor-pane">
+            <div class="editor-pane-header">Markdown 编辑</div>
+            <textarea class="editor-textarea"># 茅台投资逻辑跟踪
+
+## 经营亮点
+直销渠道收入同比增长 23.15%，主要受惠于公司持续推进直营化战略，i茅台平台贡献显著[1]。
+
+产品结构方面，茅台1935等次高端产品表现亮眼，系列酒收入增长12.85%[2]。
+
+## 风险因素
+行业竞争加剧，次高端价格带面临五粮液、泸州老窖等竞品的激烈竞争[3]。
+
+消费趋势变化：年轻消费群体白酒消费意愿下降，可能影响长期增长。
+
+## 估值变化
+当前 PE(TTM) 28x，处于近5年 30% 分位水平，相对合理。考虑15%的盈利增速， PEG 约 1.87x。</textarea>
+          </div>
+          <div class="editor-pane">
+            <div class="editor-pane-header">实时预览</div>
+            <div class="editor-preview">
+              <h1>茅台投资逻辑跟踪</h1>
+              <h2>经营亮点</h2>
+              <p>直销渠道收入同比增长 23.15%，主要受惠于公司持续推进直营化战略，i茅台平台贡献显著<span style="color:var(--primary-light);font-weight:600">[1]</span>。</p>
+              <p>产品结构方面，茅台1935等次高端产品表现亮眼，系列酒收入增长12.85%<span style="color:var(--primary-light);font-weight:600">[2]</span>。</p>
+              <h2>风险因素</h2>
+              <p>行业竞争加剧，次高端价格带面临五粮液、泸州老窖等竞品的激烈竞争<span style="color:var(--primary-light);font-weight:600">[3]</span>。</p>
+              <p>消费趋势变化：年轻消费群体白酒消费意愿下降，可能影响长期增长。</p>
+              <h2>估值变化</h2>
+              <p>当前 PE(TTM) 28x，处于近5年 30% 分位水平，相对合理。考虑15%的盈利增速， PEG 约 1.87x。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="asset-bottom">
+          <div class="asset-bottom-card">
+            <h4>📎 引用 (3)</h4>
+            <div class="citation-item">
+              <span class="cit-no">1</span> 茅台2025年年报 p.12
+            </div>
+            <div class="citation-item">
+              <span class="cit-no">2</span> 中金公司-白酒行业展望 p.5
+            </div>
+            <div class="citation-item">
+              <span class="cit-no">3</span> 中信证券-食品饮料周报 p.8
+            </div>
+          </div>
+          <div class="asset-bottom-card">
+            <h4>📋 版本历史</h4>
+            <div style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)">
+              <div style="font-weight:500">v2</div>
+              <div style="color:var(--text-muted)">2026-06-07 16:30 · 补充估值变化</div>
+            </div>
+            <div style="font-size:12px;padding:6px 0">
+              <div style="font-weight:500">v1</div>
+              <div style="color:var(--text-muted)">2026-06-05 14:20 · 初次保存</div>
+            </div>
+          </div>
+          <div class="asset-bottom-card">
+            <h4>🏷️ 标签</h4>
+            <span class="tag">白酒</span>
+            <span class="tag">业绩超预期</span>
+            <span class="tag">估值分析</span>
+            <span style="color:var(--primary-light);font-size:12px;cursor:pointer;margin-top:8px;display:inline-block">+ 添加标签</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: Settings ==================== -->
+      <div class="page" id="page-settings">
+        <h2 style="font-size:20px;font-weight:600;margin-bottom:20px">系统设置</h2>
+
+        <div class="tabs">
+          <button class="tab-btn active">系统信息</button>
+          <button class="tab-btn">Prompt 模板</button>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title mb-16">系统信息</div>
+            <div class="detail-item"><span class="label" style="width:120px">应用版本</span><span class="value" style="font-family:var(--font-mono)">0.1.0</span></div>
+            <div class="detail-item"><span class="label" style="width:120px">运行环境</span><span class="value">local</span></div>
+            <div class="detail-item"><span class="label" style="width:120px">向量检索</span><span class="value"><span class="badge badge-success">已启用</span></span></div>
+            <div class="detail-item"><span class="label" style="width:120px">重排序</span><span class="value"><span class="badge badge-success">已启用</span></span></div>
+            <div class="detail-item"><span class="label" style="width:120px">LLM 提供商</span><span class="value">deepseek-chat</span></div>
+            <div class="detail-item"><span class="label" style="width:120px">Embedding</span><span class="value">bge-m3 (Ollama 本地)</span></div>
+            <div class="detail-item"><span class="label" style="width:120px">向量维度</span><span class="value" style="font-family:var(--font-mono)">1024</span></div>
+            <div class="detail-item"><span class="label" style="width:120px">数据库</span><span class="value">PostgreSQL 16 + pgvector</span></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title mb-16">Prompt 模板管理</div>
+            <table>
+              <thead><tr><th>模板名</th><th>Agent</th><th>场景</th><th>版本</th><th>状态</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td style="font-family:var(--font-mono);font-size:12px">research_qa_default</td>
+                  <td>research_agent</td>
+                  <td>问答</td>
+                  <td style="font-family:var(--font-mono);font-size:12px">v1</td>
+                  <td><span class="badge badge-success">启用</span></td>
+                </tr>
+                <tr>
+                  <td style="font-family:var(--font-mono);font-size:12px">research_memo_default</td>
+                  <td>research_agent</td>
+                  <td>备忘录</td>
+                  <td style="font-family:var(--font-mono);font-size:12px">v1</td>
+                  <td><span class="badge badge-success">启用</span></td>
+                </tr>
+                <tr>
+                  <td style="font-family:var(--font-mono);font-size:12px">daily_report_default</td>
+                  <td>reporting_agent</td>
+                  <td>日报</td>
+                  <td style="font-family:var(--font-mono);font-size:12px">v1</td>
+                  <td><span class="badge badge-success">启用</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-overlay" id="uploadModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📤 上传文档</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeUploadModal()" style="font-size:18px">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-zone" onclick="showToast('文件选择器已触发（原型演示）')">
+        <div class="upload-icon">📁</div>
+        <div class="upload-text">拖拽文件到此处，或点击选择</div>
+        <div class="upload-hint">支持 PDF / DOCX / TXT / Markdown 格式</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">文档类型 *</label>
+          <select class="input select"><option>研报 (report)</option><option>公告 (announcement)</option><option>年报/财报 (financial_report)</option><option>备忘录 (memo)</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">公司名称</label>
+          <select class="input select"><option>搜索公司...</option><option>贵州茅台 600519</option><option>五粮液 000858</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">来源机构</label>
+          <input type="text" class="input" placeholder="如：中金公司">
+        </div>
+        <div class="form-group">
+          <label class="form-label">发布日期</label>
+          <input type="date" class="input" value="2026-06-08">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">权限级别</label>
+        <select class="input select"><option>内部 (internal)</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeUploadModal()">取消</button>
+      <button class="btn btn-primary" onclick="simulateUpload()">确认上传</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer"></div>
+
+<script>
+// Page navigation
+function showPage(pageName, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const page = document.getElementById('page-' + pageName);
+  if (page) page.classList.add('active');
+
+  // Update breadcrumb
+  const breadcrumb = document.getElementById('breadcrumb');
+  const pageTitles = {
+    'dashboard': ['研究工作台', '轻量首页'],
+    'documents': ['研究工作台', '文档管理'],
+    'doc-detail': ['研究工作台', '文档详情'],
+    'qa': ['研究工作台', '智能问答'],
+    'tasks': ['研究工作台', '任务中心'],
+    'assets': ['研究工作台', '研究资产'],
+    'asset-edit': ['研究工作台', '资产编辑'],
+    'settings': ['系统', '系统设置'],
+  };
+  const titles = pageTitles[pageName] || ['', pageName];
+  breadcrumb.innerHTML = titles[0] + '<span class="sep">/</span><span>' + titles[1] + '</span>';
+
+  // Update nav active
+  if (navEl) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    navEl.classList.add('active');
+  } else {
+    // find matching nav item
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(n => {
+      if (n.dataset.page === pageName) n.classList.add('active');
+      else n.classList.remove('active');
+    });
+  }
+
+  // Scroll to top
+  document.querySelector('.content').scrollTop = 0;
+}
+
+// Modal
+function openUploadModal() {
+  document.getElementById('uploadModal').style.display = 'flex';
+}
+function closeUploadModal() {
+  document.getElementById('uploadModal').style.display = 'none';
+}
+
+// Toast
+function showToast(message, type) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = (type === 'success' ? '✅ ' : type === 'error' ? '❌ ' : 'ℹ️ ') + message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+function simulateUpload() {
+  closeUploadModal();
+  showToast('文档上传成功，正在跳转详情页...', 'success');
+  setTimeout(() => showPage('doc-detail'), 500);
+}
+
+function simulateQA() {
+  const messages = document.getElementById('chatMessages');
+  const userMsg = document.createElement('div');
+  userMsg.className = 'chat-msg user';
+  userMsg.innerHTML = '<div class="msg-label">👤 研究员</div><div class="msg-bubble">茅台2025年的风险因素有哪些？</div>';
+  messages.appendChild(userMsg);
+
+  const aiMsg = document.createElement('div');
+  aiMsg.className = 'chat-msg assistant';
+  aiMsg.innerHTML = '<div class="msg-label">🤖 智能投研助手（生成中...）</div><div class="msg-bubble typing-cursor">正在检索相关资料并生成回答...</div>';
+  messages.appendChild(aiMsg);
+
+  messages.scrollTop = messages.scrollHeight;
+
+  setTimeout(() => {
+    aiMsg.querySelector('.msg-label').textContent = '🤖 智能投研助手';
+    aiMsg.querySelector('.msg-bubble').classList.remove('typing-cursor');
+    aiMsg.querySelector('.msg-bubble').innerHTML = `
+      茅台2025年面临的主要风险因素包括：<br><br>
+      <strong>1. 行业竞争加剧</strong>：次高端价格带竞争日趋激烈，五粮液、泸州老窖等竞品持续发力，可能影响茅台1935等次高端产品的市场份额<span class="citation-ref">[1]</span>。<br><br>
+      <strong>2. 消费趋势变化</strong>：年轻消费群体白酒消费意愿呈下降趋势，高端白酒的长期需求存在不确定性<span class="citation-ref">[2]</span>。<br><br>
+      <strong>3. 政策与监管风险</strong>：白酒行业面临消费税改革、限制政务消费等政策不确定性<span class="citation-ref">[3]</span>。<br><br>
+      <strong>4. 宏观经济波动</strong>：经济增速放缓可能影响高端消费，进而对茅台业绩产生压力。<br><br>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:var(--primary);color:#fff;border-radius:4px;font-size:11px;font-weight:600">1</span>
+        <span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:var(--primary);color:#fff;border-radius:4px;font-size:11px;font-weight:600">2</span>
+        <span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:var(--primary);color:#fff;border-radius:4px;font-size:11px;font-weight:600">3</span>
+        <span style="color:var(--text-muted);font-size:12px">📎 3 个引用</span>
+      </div>
+    `;
+    messages.scrollTop = messages.scrollHeight;
+  }, 2000);
+}
+
+// Time update
+function updateTime() {
+  const now = new Date();
+  const str = now.getFullYear() + '-' +
+    String(now.getMonth()+1).padStart(2,'0') + '-' +
+    String(now.getDate()).padStart(2,'0') + ' ' +
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0') + ':' +
+    String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('currentTime').textContent = str;
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+// Close modal on overlay click
+document.getElementById('uploadModal').addEventListener('click', function(e) {
+  if (e.target === this) closeUploadModal();
+});
+</script>
+
+</body>
+</html>
